@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KineticMesh</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #05050f;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+let nodes = [];
+let sticks = [];
+let t = 0;
+
+const RES_X = 40;
+const RES_Y = 30;
+const GAP = 22;
+const ITERATIONS = 4;
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    
+    let start_x = windowWidth / 2 - (RES_X * GAP) / 2;
+    let start_y = windowHeight / 2 - (RES_Y * GAP) / 2;
+
+    for (let y = 0; y < RES_Y; y++) {
+        let row = [];
+        for (let x = 0; x < RES_X; x++) {
+            let nx = x * GAP + start_x;
+            let ny = y * GAP + start_y;
+            row.push({
+                x: nx, y: ny,
+                px: nx, py: ny,
+                base_x: nx, base_y: ny
+            });
+        }
+        nodes.push(row);
+    }
+
+    for (let y = 0; y < RES_Y; y++) {
+        for (let x = 0; x < RES_X; x++) {
+            if (x < RES_X - 1) {
+                sticks.push([nodes[y][x], nodes[y][x+1], GAP, true]);
+            }
+            if (y < RES_Y - 1) {
+                sticks.push([nodes[y][x], nodes[y+1][x], GAP, true]);
+            }
+        }
+    }
+}
+
+function draw() {
+    background(5, 5, 15, 60);
+    
+    t += 0.05;
+    let mx = mouseX;
+    let my = mouseY;
+
+    for (let y = 0; y < RES_Y; y++) {
+        for (let x = 0; x < RES_X; x++) {
+            let n = nodes[y][x];
+
+            let vx = (n.x - n.px) * 0.98;
+            let vy = (n.y - n.py) * 0.98;
+            n.px = n.x;
+            n.py = n.y;
+
+            let driftX = Math.sin(t + n.base_x * 0.01) * 0.2;
+            let driftY = Math.cos(t + n.base_y * 0.01) * 0.2;
+            n.x += vx + driftX;
+            n.y += vy + driftY;
+
+            if (mouseIsPressed && mouseButton === LEFT) {
+                let dx = n.x - mx;
+                let dy = n.y - my;
+                let d = Math.sqrt(dx * dx + dy * dy);
+                if (d < 150) {
+                    let force = (150 - d) * 0.02;
+                    n.x -= (dx / (d + 1)) * force;
+                    n.y -= (dy / (d + 1)) * force;
+                }
+            }
+        }
+    }
+
+    for (let iter = 0; iter < ITERATIONS; iter++) {
+        for (let s of sticks) {
+            if (!s[3]) continue;
+            
+            let p1 = s[0];
+            let p2 = s[1];
+            let length = s[2];
+            
+            let dx = p2.x - p1.x;
+            let dy = p2.y - p1.y;
+            let d = Math.sqrt(dx * dx + dy * dy);
+            if (d === 0) d = 0.1;
+
+            if (mouseIsPressed && (mouseButton === RIGHT || keyIsDown(CONTROL)) && d < 30 && dist(p1.x, p1.y, mx, my) < 30) {
+                s[3] = false;
+                continue;
+            }
+            
+            if (d > length * 4) {
+                s[3] = false;
+                continue;
+            }
+
+            let diff = (length - d) / d * 0.5;
+            p1.x -= dx * diff;
+            p1.y -= dy * diff;
+            p2.x += dx * diff;
+            p2.y += dy * diff;
+        }
+    }
+
+    strokeWeight(1.5);
+    for (let s of sticks) {
+        if (s[3]) {
+            let dx = s[0].x - s[1].x;
+            let dy = s[0].y - s[1].y;
+            let d = Math.sqrt(dx * dx + dy * dy);
+            
+            let pulse = (Math.sin(t * 2) + 1) * 50;
+            
+            let r = Math.min(255, Math.floor(d * 5));
+            let g = Math.min(255, Math.floor(100 + pulse + d * 2));
+            let b = 255;
+            
+            stroke(r, g, b);
+            line(s[0].x, s[0].y, s[1].x, s[1].y);
+        }
+    }
+}
+
+function keyPressed() {
+    if (key === ' ') {
+        let cx = windowWidth / 2;
+        let cy = windowHeight / 2;
+        for (let y = 0; y < RES_Y; y++) {
+            for (let x = 0; x < RES_X; x++) {
+                let n = nodes[y][x];
+                let dx = n.x - cx;
+                let dy = n.y - cy;
+                let d = Math.sqrt(dx * dx + dy * dy);
+                n.x += (dx / (d + 1)) * 50;
+                n.y += (dy / (d + 1)) * 50;
+            }
+        }
+    }
+}
+
+document.oncontextmenu = function() { return false; }
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+}
+</script>
+
+</body>
+</html>
