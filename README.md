@@ -2,7 +2,7 @@
 
 
 
-**Lancer la simulation sur GitHub Pages(https://Morganic07.github.io/filetPython/)**
+**Lancer la simulation sur GitHub Pages(https://Morganic07.github.io/filetChaotic.py/)**
 
 
 ## Fonctionnalités 
